@@ -20,6 +20,7 @@ namespace fs_test {
     address get_address(int a);
     descriptor get_descriptor(int d);
     short get_count();
+    short* get_table();
 }
 
 

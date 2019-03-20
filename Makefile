@@ -9,4 +9,4 @@ fs.o:
 	g++ -c fs.cpp disk.c
 	
 clean:
-	rm -f *.o *.exe *.drive
+	rm -f *.o *.exe *.drive myfs2 

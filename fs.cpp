@@ -123,7 +123,10 @@ namespace  {
         if(head < 0) return off;
         int next = data_table[head]; 
         if(off == last_offset) data_table[head] = -1;
-        if(off > last_offset)  data_table[head] = 0;
+        if(off > last_offset){
+            data_table[head] = 0;
+            block_write(head, EMPTY_BLOCK);
+        }  
         return trunc_blocks(next, last_offset, off + 1);
     }
 
@@ -458,6 +461,7 @@ int fs_delete(char* name) {
     while(next != -1) {
         short cur = data_table[next];
         data_table[next] = 0;
+        block_write(next, EMPTY_BLOCK);
         next = data_table[cur];
     }
 
@@ -509,6 +513,7 @@ int fs_read(int fildes, void* buf, size_t nbyte) {
     // Compute possible bytes:
     int bytes_possible = directory[temp.directory_num].filesize - 
     temp.offset_block * BLOCK_SIZE - temp.offset_byte;
+    if(bytes_possible < 1) return 0;
 
     // For each block:
     char temp_block[BLOCK_SIZE];
@@ -554,7 +559,7 @@ int fs_read(int fildes, void* buf, size_t nbyte) {
 
 
 /*****************************************************************************/
-/* Definition - fs_read -----------------------------------------------------*/
+/* Definition - fs_lseek -----------------------------------------------------*/
 int fs_lseek(int fildes, off_t offset) {
 
     // Validate filedes:
@@ -605,6 +610,16 @@ int fs_truncate(int fildes, off_t length) {
     int traversals = trunc_blocks(directory[des_table[fildes].directory_num].head,
     des_table[fildes].offset_block);
     if(des_table[fildes].offset_block > traversals) return -1;
+
+    // Truncate extra bytes:
+    char wrt_blk[BLOCK_SIZE];
+    short last_blk = get_block_by_offset(directory[des_table[fildes].directory_num].head,
+    des_table[fildes].offset_block);
+    block_read(last_blk, wrt_blk);
+    for(int c = des_table[fildes].offset_byte; c < BLOCK_SIZE; c++) {
+        wrt_blk[c] = 0;
+    }
+    block_write(last_blk, wrt_blk);
 
     //May need to deallocate head block:
     if(fs_get_filesize(fildes) == 0) {
@@ -660,3 +675,8 @@ address fs_test::get_address(int a) {
 descriptor fs_test::get_descriptor(int d) {
     return des_table[d];
 } /*-------------------------------------------------------------------------*/
+
+
+short* fs_test::get_table() {
+    return data_table;
+}

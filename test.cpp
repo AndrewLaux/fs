@@ -303,9 +303,259 @@ int main() {
 
 void tests() {
 
+    printf("********************************\n");
+    printf("********  Phase 2  *************\n");
+    printf("********************************\n\n");
+
     char* disk = (char*)"G.drive";
     make_fs(disk);
     mount_fs(disk);
+    fs_create((char*)"rs.txt");
+    int fd0 = fs_open((char*)"rs.txt");
+    int fd1 = fs_open((char*)"rs.txt");
+
+    char r[BLOCK_SIZE];
+    char s[BLOCK_SIZE];
+    char q[BLOCK_SIZE];
+    char t[BLOCK_SIZE];
+    char read[BLOCK_SIZE];
+
+    for(int i = 0; i < BLOCK_SIZE; i++) {
+        r[i] = 'r';
+        s[i] = 's';
+        q[i] = 'q';
+        t[i] = 't';
+    }
+
+    printf("Four blocks of S from fd1:\n");
+
+    fs_write(fd1, s, BLOCK_SIZE);
+    fs_write(fd1, s, BLOCK_SIZE);
+    fs_write(fd1, s, BLOCK_SIZE);
+    fs_write(fd1, s, BLOCK_SIZE);
+
+    //Print descriptor table.
+    printf("\n\nDescriptor Table");
+    printf("\n----------------\n");
+
+    for(int d = 0; d < 32; d++) {
+        if(fs_test::get_descriptor(d).opened == true) {
+            descriptor temp = fs_test::get_descriptor(d);
+            address add = fs_test::get_address(temp.directory_num);
+            printf("%i - %s @ block %i + %i, size: %i\n",
+            d, add.name, temp.offset_block, temp.offset_byte, add.filesize);
+        }
+    }
+
+    printf("\nTwo blocks of R from fd0:\n");
+
+    fs_write(fd0, r, BLOCK_SIZE);
+    fs_write(fd0, r, BLOCK_SIZE);
+
+    //Print descriptor table.
+    printf("\n\nDescriptor Table");
+    printf("\n----------------\n");
+
+    for(int d = 0; d < 32; d++) {
+        if(fs_test::get_descriptor(d).opened == true) {
+            descriptor temp = fs_test::get_descriptor(d);
+            address add = fs_test::get_address(temp.directory_num);
+            printf("%i - %s @ block %i + %i, size: %i\n",
+            d, add.name, temp.offset_block, temp.offset_byte, add.filesize);
+        }
+    }
+
+    fs_create((char*)"q.txt");
+    int fd2 = fs_open((char*)"q.txt");
+    fs_write(fd2, q, BLOCK_SIZE);
+
+    printf("Create q, write block to fd2:\n");
+
+    //Print descriptor table.
+    printf("\n\nDescriptor Table");
+    printf("\n----------------\n");
+
+    for(int d = 0; d < 32; d++) {
+        if(fs_test::get_descriptor(d).opened == true) {
+            descriptor temp = fs_test::get_descriptor(d);
+            address add = fs_test::get_address(temp.directory_num);
+            printf("%i - %s @ block %i + %i, size: %i\n",
+            d, add.name, temp.offset_block, temp.offset_byte, add.filesize);
+        }
+    }
+
+
+    // Print Files.
+    printf("\nFiles found on disk");
+    printf("\n-------------------\n");
+    for (int i = 0; i < 64; i++) {
+        if(strcmp(fs_test::get_address(i).name, (char*)"") != 0){
+            address temp = fs_test::get_address(i);
+            printf("%s %i \n", temp.name, temp.head);
+        }
+    }
+    printf("\n");
+
+    //Print data_table
+    short* table = fs_test::get_table();
+    for(int t = 0; t < 10; t++) {
+        printf("[%i]", table[t]);
+    }
+
+    printf("\n\nTruncate fd0 by a block:");
+
+    fs_truncate(fd0, BLOCK_SIZE);
+
+    //Print descriptor table.
+    printf("\n\nDescriptor Table");
+    printf("\n----------------\n");
+
+    for(int d = 0; d < 32; d++) {
+        if(fs_test::get_descriptor(d).opened == true) {
+            descriptor temp = fs_test::get_descriptor(d);
+            address add = fs_test::get_address(temp.directory_num);
+            printf("%i - %s @ block %i + %i, size: %i\n",
+            d, add.name, temp.offset_block, temp.offset_byte, add.filesize);
+        }
+    }
+
+    //Print data_table
+    printf("\n\n");
+    for(int t = 0; t < 10; t++) {
+        printf("[%i]", table[t]);
+    }
+
+
+    // Check zeroed 
+    block_read(2, read);
+    if(read[0] == 0 && read[4095] == 0) {
+        printf("\n[x] zeroed block 2.\n");
+    } 
+
+    block_read(0, read);
+    if(read[0] == 'r' && read[4095] == 'r') {
+        printf("\n[x] Block 0 reads r's.\n");
+    }
+
+    printf("\n\nCreate a new file in hole:");
+    printf("\n\nWrite two blocks to t to fd3:\n");
+
+    fs_create((char*)"t.txt");
+    int fd3 = fs_open((char*)"t.txt");
+    fs_write(fd3, t, BLOCK_SIZE);
+    fs_write(fd3, t, BLOCK_SIZE);
+
+    //Print descriptor table.
+    printf("\n\nDescriptor Table");
+    printf("\n----------------\n");
+
+    for(int d = 0; d < 32; d++) {
+        if(fs_test::get_descriptor(d).opened == true) {
+            descriptor temp = fs_test::get_descriptor(d);
+            address add = fs_test::get_address(temp.directory_num);
+            printf("%i - %s @ block %i + %i, size: %i\n",
+            d, add.name, temp.offset_block, temp.offset_byte, add.filesize);
+        }
+    }
+
+    //Print data_table
+    printf("\n\n");
+    for(int t = 0; t < 10; t++) {
+        printf("[%i]", table[t]);
+    }
+
+    // Try to read from apend fs.
+    int read_fd = fs_read(fd0, read, BLOCK_SIZE);
+    printf("\nRead %i bytes from fd0.\n", read_fd);
+    read_fd = fs_read(fd1, read, BLOCK_SIZE);
+    printf("\nRead %i bytes from fd1.\n", read_fd);
+
+    printf("2 1/2 blocks to fd1.\n");
+
+    fs_write(fd1, s, BLOCK_SIZE);
+    fs_write(fd1, s, 2048);
+
+    //Print descriptor table.
+    printf("\n\nDescriptor Table");
+    printf("\n----------------\n");
+
+    for(int d = 0; d < 32; d++) {
+        if(fs_test::get_descriptor(d).opened == true) {
+            descriptor temp = fs_test::get_descriptor(d);
+            address add = fs_test::get_address(temp.directory_num);
+            printf("%i - %s @ block %i + %i, size: %i\n",
+            d, add.name, temp.offset_block, temp.offset_byte, add.filesize);
+        }
+    }
+
+    //Print data_table
+    printf("\n\n");
+    for(int t = 0; t < 10; t++) {
+        printf("[%i]", table[t]);
+    }
+
+    char b0[BLOCK_SIZE];
+    char b1[BLOCK_SIZE];
+    char b2[BLOCK_SIZE];
+    char b3[BLOCK_SIZE];
+    char b4[BLOCK_SIZE];
+    char b5[BLOCK_SIZE];
+    char b6[BLOCK_SIZE];
+    char b7[BLOCK_SIZE];
+    char b8[BLOCK_SIZE];
+    char b9[BLOCK_SIZE];
+    block_read(0, b0);
+    block_read(1, b1);
+    block_read(2, b2);
+    block_read(3, b3);
+    block_read(4, b4);
+    block_read(5, b5);
+    block_read(6, b6);
+    block_read(7, b7);
+    block_read(8, b8);
+    block_read(9, b9);
+    printf("\n[%c , %c]\n", b0[0], b0[4095]);
+    printf("[%c , %c]\n", b1[0], b1[4095]);
+    printf("[%c , %c]\n", b2[0], b2[4095]);
+    printf("[%c , %c]\n", b3[0], b3[4095]);
+    printf("[%c , %c]\n", b4[0], b4[4095]);
+    printf("[%c , %c]\n", b5[0], b5[4095]);
+    printf("[%c , %c]\n", b6[0], b6[4095]);
+    printf("[%c , %c]\n", b7[0], b7[4095]);
+    printf("[%c , %c]\n", b8[0], b8[4095]);
+    printf("[%c , %c]\n", b9[0], b9[4095]);
+
+    printf("\n Truncating fd1.\n");
+    fs_truncate(fd1, 0);
+    
+    block_read(0, b0);
+    block_read(1, b1);
+    block_read(2, b2);
+    block_read(3, b3);
+    block_read(4, b4);
+    block_read(5, b5);
+    block_read(6, b6);
+    block_read(7, b7);
+    block_read(8, b8);
+    block_read(9, b9);
+    printf("\n[%c , %c]\n", b0[0], b0[4095]);
+    printf("[%c , %c]\n", b1[0], b1[4095]);
+    printf("[%c , %c]\n", b2[0], b2[4095]);
+    printf("[%c , %c]\n", b3[0], b3[4095]);
+    printf("[%c , %c]\n", b4[0], b4[4095]);
+    printf("[%c , %c]\n", b5[0], b5[4095]);
+    printf("[%c , %c]\n", b6[0], b6[4095]);
+    printf("[%c , %c]\n", b7[0], b7[4095]);
+    printf("[%c , %c]\n", b8[0], b8[4095]);
+    printf("[%c , %c]\n", b9[0], b9[4095]);
+
+    fs_write(fd0, r, BLOCK_SIZE);
+
+    fs_read(fd1, b0, BLOCK_SIZE);
+    fs_read(fd1, b1, BLOCK_SIZE);
+
+    printf("\n[%c , %c]\n", b0[0], b0[4095]);
+    printf("[%c , %c]\n", b1[0], b1[4095]);
 
 
 }
