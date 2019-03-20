@@ -303,7 +303,9 @@ int main() {
 
 void tests() {
 
-
+    char* disk = (char*)"G.drive";
+    make_fs(disk);
+    mount_fs(disk);
 
 
 }
