@@ -1,0 +1,6 @@
+.vscode
+disk.c
+disk.h
+*.o
+*.exe
+*.drive
