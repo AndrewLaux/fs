@@ -187,8 +187,15 @@ int mount_fs(char *disk_name) {
 /* Definition - int umount_fs -----------------------------------------------*/
 int umount_fs(char *disk_name) {
     if(strcmp(fs_name, disk_name) != 0) return -1;
+    else {
+        save_count();
+        save_directory();
+        save_table();
+    }
     if(close_disk() == -1) return -1;
-    else fs_name = nullptr;
+    else {   
+        fs_name = nullptr;
+    } 
     return 0;
 } /*-------------------------------------------------------------------------*/
 
@@ -626,6 +633,8 @@ int fs_truncate(int fildes, off_t length) {
         data_table[directory[des_table[fildes].directory_num].head] = 0;
         directory[des_table[fildes].directory_num].head = -1;
     }
+    save_directory();
+    save_table();
     return 0;
 
 

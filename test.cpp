@@ -526,7 +526,7 @@ void tests() {
     printf("[%c , %c]\n", b9[0], b9[4095]);
 
     printf("\n Truncating fd1.\n");
-    fs_truncate(fd1, 0);
+    fs_truncate(fd1, 500);
     
     block_read(0, b0);
     block_read(1, b1);
@@ -549,6 +549,7 @@ void tests() {
     printf("[%c , %c]\n", b8[0], b8[4095]);
     printf("[%c , %c]\n", b9[0], b9[4095]);
 
+    fs_lseek(fd0, 0);
     fs_write(fd0, r, BLOCK_SIZE);
 
     fs_read(fd1, b0, BLOCK_SIZE);
