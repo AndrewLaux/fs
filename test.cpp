@@ -8,6 +8,8 @@ Test driver for file system.
 #include "fs.h"
 using namespace std;
 
+void tests();
+
 int main() {
 
     // Create file system.
@@ -292,9 +294,16 @@ int main() {
     read_des);
     else if(read_res > 64) printf("[ ] Read past EOF.\n");  
 
-
-    
+    int u = umount_fs(drive_name);
+    if (u != -1) tests();
 
 
     return 0;
+}
+
+void tests() {
+
+
+
+
 }
